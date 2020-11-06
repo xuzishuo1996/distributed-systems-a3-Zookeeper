@@ -60,5 +60,7 @@ public class StorageNode {
 		curClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(args[3] + "/", serverString.getBytes());
 
 		// set up watcher on the children
+		ServerWatcher serverWatcher = new ServerWatcher(curClient, args[3]);
+		List<String> children = curClient.getChildren().usingWatcher(serverWatcher).forPath(args[3]);
 	}
 }

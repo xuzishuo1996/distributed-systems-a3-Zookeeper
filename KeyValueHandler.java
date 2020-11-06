@@ -37,5 +37,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
 
     public void put(String key, String value) throws org.apache.thrift.TException {
         myMap.put(key, value);
+
+        // send key to the backup if it exists
     }
 }
