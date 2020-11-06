@@ -56,5 +56,9 @@ public class StorageNode {
 
 		// TODO: create an ephemeral node in ZooKeeper
 		// curClient.create(...)
+		String serverString = args[0] + ":" + args[1];
+		curClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(args[3] + "/", serverString.getBytes());
+
+		// set up watcher on the children
 	}
 }
