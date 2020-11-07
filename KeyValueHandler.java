@@ -1,6 +1,8 @@
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.curator.framework.*;
 import org.apache.log4j.BasicConfigurator;
@@ -14,6 +16,7 @@ import org.apache.thrift.transport.TTransport;
 public class KeyValueHandler implements KeyValueService.Iface {
     // fields in starter code
     private Map<String, String> myMap;
+    private Lock mapLock = new ReentrantLock();
     private CuratorFramework curClient;
     private String zkNode;
     private String host;
@@ -85,11 +88,16 @@ public class KeyValueHandler implements KeyValueService.Iface {
     }
 
     public void put(String key, String value) throws org.apache.thrift.TException {
-        myMap.put(key, value);
+        mapLock.lock();
+        try {
+            myMap.put(key, value);
 
-        // send key to the backup if it exists
-        if (!isSingle && isPrimary) {
-            clientToBackUp.put(key, value);
+            // send key to the backup if it exists
+            if (!isSingle && isPrimary) {
+                clientToBackUp.put(key, value);
+            }
+        } finally {
+            mapLock.unlock();
         }
     }
 
