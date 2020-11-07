@@ -4,6 +4,7 @@ import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
 import org.apache.zookeeper.WatchedEvent;
 
+import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
 
@@ -47,10 +48,20 @@ public class ServerWatcher implements CuratorWatcher {
                 keyValueHandler.setBackupServerId(children.get(1));
                 keyValueHandler.setBackupAddress(keyValueHandler.getAddress(keyValueHandler.getBackupServerId()));
                 keyValueHandler.setClientToBackUp(keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress()));
+
+                // forward the whole map to the newly added server
+                InetSocketAddress newServerAddress = keyValueHandler.getAddress(children.get(1));
+                KeyValueService.Client client = keyValueHandler.getThriftClient(newServerAddress);
+                client.forwardMap(keyValueHandler.getMyMap());
             } else {
                 log.info("This is the backup server now!");
                 keyValueHandler.setPrimary(false);
                 keyValueHandler.setBackupServerId(keyValueHandler.currServerId);
+
+                // forward the whole map to the newly added server
+                InetSocketAddress newServerAddress = keyValueHandler.getAddress(children.get(0));
+                KeyValueService.Client client = keyValueHandler.getThriftClient(newServerAddress);
+                client.forwardMap(keyValueHandler.getMyMap());
             }
         }
     }

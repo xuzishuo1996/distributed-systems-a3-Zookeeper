@@ -31,6 +31,12 @@ public class KeyValueHandler implements KeyValueService.Iface {
     InetSocketAddress backupAddress;    // use for when isPrimary is true;
     KeyValueService.Client clientToBackUp;      // use for when isPrimary is true;
 
+    public Map<String, String> getMyMap() {
+        return myMap;
+    }
+    public void setMyMap(Map<String, String> myMap) {
+        this.myMap = myMap;
+    }
     public KeyValueService.Client getClientToBackUp() {
         return clientToBackUp;
     }
@@ -96,6 +102,15 @@ public class KeyValueHandler implements KeyValueService.Iface {
             if (!isSingle && isPrimary) {
                 clientToBackUp.put(key, value);
             }
+        } finally {
+            mapLock.unlock();
+        }
+    }
+
+    public void forwardMap(Map<String, String> mapFromExistedSever) throws org.apache.thrift.TException {
+        mapLock.lock();
+        try {
+            myMap = new ConcurrentHashMap<>(mapFromExistedSever);
         } finally {
             mapLock.unlock();
         }
