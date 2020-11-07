@@ -8,17 +8,19 @@ import java.util.Collections;
 import java.util.List;
 
 public class ServerWatcher implements CuratorWatcher {
-    static Logger log;
+    Logger log;
 
     private CuratorFramework currClient;
     private String zkNode;
+    private KeyValueHandler keyValueHandler;
 
-    boolean single = true;
-    boolean isPrimary = true;
+//    boolean single = true;
+//    boolean isPrimary = true;
 
-    public ServerWatcher(CuratorFramework currClient, String zkNode) {
+    public ServerWatcher(CuratorFramework currClient, String zkNode, KeyValueHandler keyValueHandler) {
         this.currClient = currClient;
         this.zkNode = zkNode;
+        this.keyValueHandler = keyValueHandler;
 
         BasicConfigurator.configure();
         log = Logger.getLogger(ServerWatcher.class.getName());
@@ -26,18 +28,18 @@ public class ServerWatcher implements CuratorWatcher {
 
     @Override
     public void process(WatchedEvent watchedEvent) throws Exception {
-        log.info("ZooKeeper event: " +watchedEvent);
+        log.error("ZooKeeper event: " + watchedEvent);
 
         List<String> children = currClient.getChildren().usingWatcher(this).forPath(zkNode);
 
         if (children.size() == 1) {
             log.info("This is the single server now!");
-            single = true;
-            isPrimary = true;
+            keyValueHandler.setSingle(true);
+            keyValueHandler.setPrimary(true);
         } else {
-            single = false;
+            keyValueHandler.setSingle(false);
             Collections.sort(children);
-            log.info(children.get(0) + "\n" + children.get(1));
+            log.error(children.get(0) + "\n" + children.get(1));
         }
     }
 }

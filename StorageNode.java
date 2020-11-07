@@ -37,8 +37,8 @@ public class StorageNode {
 			}
 		});
 
-		KeyValueService.Processor<KeyValueService.Iface> processor = new KeyValueService.Processor<>(
-				new KeyValueHandler(args[0], Integer.parseInt(args[1]), curClient, args[3]));
+		KeyValueHandler keyValueHandler = new KeyValueHandler(args[0], Integer.parseInt(args[1]), curClient, args[3]);
+		KeyValueService.Processor<KeyValueService.Iface> processor = new KeyValueService.Processor<>(keyValueHandler);
 		TServerSocket socket = new TServerSocket(Integer.parseInt(args[1]));
 		TThreadPoolServer.Args sargs = new TThreadPoolServer.Args(socket);
 		sargs.protocolFactory(new TBinaryProtocol.Factory());
@@ -57,10 +57,11 @@ public class StorageNode {
 		// TODO: create an ephemeral node in ZooKeeper
 		// curClient.create(...)
 		String serverString = args[0] + ":" + args[1];
-		curClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(args[3] + "/", serverString.getBytes());
+		String currServerId = curClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(args[3] + "/", serverString.getBytes());
+		log.error("[StorageNode.java]Curr Server ID: " + currServerId);
 
 		// set up watcher on the children
-		ServerWatcher serverWatcher = new ServerWatcher(curClient, args[3]);
+		ServerWatcher serverWatcher = new ServerWatcher(curClient, args[3], keyValueHandler);
 		List<String> children = curClient.getChildren().usingWatcher(serverWatcher).forPath(args[3]);
 	}
 }
