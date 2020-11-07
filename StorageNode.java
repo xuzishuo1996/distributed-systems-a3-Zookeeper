@@ -57,8 +57,11 @@ public class StorageNode {
 		// TODO: create an ephemeral node in ZooKeeper
 		// curClient.create(...)
 		String serverString = args[0] + ":" + args[1];
-		String currServerId = curClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(args[3] + "/", serverString.getBytes());
-		log.error("[StorageNode.java]Curr Server ID: " + currServerId);
+		String result = curClient.create().withMode(CreateMode.EPHEMERAL_SEQUENTIAL).forPath(args[3] + "/", serverString.getBytes());
+		log.error("[StorageNode.java]Curr Server ID: " + result);	// [main] ERROR StorageNode  - [StorageNode.java]Curr Server ID: /z463xu/0000000008
+		String[] splitStr = result.split("/");
+		String currServerId = splitStr[splitStr.length - 1];
+		log.error("[StorageNode.java]Curr Server ID: " + result);
 
 		// set up watcher on the children
 		ServerWatcher serverWatcher = new ServerWatcher(curClient, args[3], keyValueHandler);
