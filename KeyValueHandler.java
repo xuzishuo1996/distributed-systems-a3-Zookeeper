@@ -14,6 +14,15 @@ public class KeyValueHandler implements KeyValueService.Iface {
     // fields add by myself
     boolean isSingle = true;
     boolean isPrimary = true;
+    String currServerId;
+
+    public void setCurrServerId(String currServerId) {
+        this.currServerId = currServerId;
+    }
+
+    public String getCurrServerId() {
+        return currServerId;
+    }
 
     public boolean isSingle() {
         return isSingle;

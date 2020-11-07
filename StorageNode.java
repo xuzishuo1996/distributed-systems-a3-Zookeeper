@@ -61,7 +61,8 @@ public class StorageNode {
 		log.error("[StorageNode.java]Curr Server ID: " + result);	// [main] ERROR StorageNode  - [StorageNode.java]Curr Server ID: /z463xu/0000000008
 		String[] splitStr = result.split("/");
 		String currServerId = splitStr[splitStr.length - 1];
-		log.error("[StorageNode.java]Curr Server ID: " + result);
+		log.error("[StorageNode.java]Curr Server ID: " + currServerId);	// 0000000008. works
+		keyValueHandler.setCurrServerId(currServerId);
 
 		// set up watcher on the children
 		ServerWatcher serverWatcher = new ServerWatcher(curClient, args[3], keyValueHandler);

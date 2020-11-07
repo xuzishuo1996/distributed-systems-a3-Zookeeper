@@ -40,6 +40,13 @@ public class ServerWatcher implements CuratorWatcher {
             keyValueHandler.setSingle(false);
             Collections.sort(children);
             log.error(children.get(0) + "\n" + children.get(1));
+            if (keyValueHandler.currServerId.equals(children.get(0))) {
+                keyValueHandler.setPrimary(true);
+                log.info("This is the primary server now!");
+            } else {
+                keyValueHandler.setPrimary(false);
+                log.info("This is the backup server now!");
+            }
         }
     }
 }
