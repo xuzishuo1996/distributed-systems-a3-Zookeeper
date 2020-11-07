@@ -32,6 +32,7 @@ public class ServerWatcher implements CuratorWatcher {
 
         List<String> children = currClient.getChildren().usingWatcher(this).forPath(zkNode);
 
+        // works
         if (children.size() == 1) {
             log.info("This is the single server now!");
             keyValueHandler.setSingle(true);
@@ -40,12 +41,16 @@ public class ServerWatcher implements CuratorWatcher {
             keyValueHandler.setSingle(false);
             Collections.sort(children);
             log.error(children.get(0) + "\n" + children.get(1));
-            if (keyValueHandler.currServerId.equals(children.get(0))) {
-                keyValueHandler.setPrimary(true);
+            if (keyValueHandler.currServerId.equals(children.get(0))) { // curr server is primary server
                 log.info("This is the primary server now!");
+                keyValueHandler.setPrimary(true);
+                keyValueHandler.setBackupServerId(children.get(1));
+                keyValueHandler.setBackupAddress(keyValueHandler.getAddress(keyValueHandler.getBackupServerId()));
+                keyValueHandler.setClientToBackUp(keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress()));
             } else {
-                keyValueHandler.setPrimary(false);
                 log.info("This is the backup server now!");
+                keyValueHandler.setPrimary(false);
+                keyValueHandler.setBackupServerId(keyValueHandler.currServerId);
             }
         }
     }
