@@ -12,6 +12,7 @@ import org.apache.zookeeper.WatchedEvent;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class ServerWatcher implements CuratorWatcher {
     Logger log;
@@ -58,7 +59,7 @@ public class ServerWatcher implements CuratorWatcher {
                 keyValueHandler.setBackupAddress(newBackupAddress);
 
                 if (keyValueHandler.clientsQueue == null || !keyValueHandler.backupAddress.equals(newBackupAddress)) {
-                    keyValueHandler.clientsQueue = null;
+                    keyValueHandler.clientsQueue = new ConcurrentLinkedQueue<>();
 
                     KeyValueService.Client clientToBackUp = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
 //                    KeyValueService.Client clientToBackUp = null;
