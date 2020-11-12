@@ -38,7 +38,7 @@ public class ServerWatcher implements CuratorWatcher {
     @Override
     synchronized public void process(WatchedEvent watchedEvent) throws Exception {
         try {
-            log.info("ZooKeeper event: " + watchedEvent);
+//            log.info("ZooKeeper event: " + watchedEvent);
 
             currClient.sync(); // sync the zookeeper cluster to make sure the client will get the newest data.
             List<String> children = currClient.getChildren().usingWatcher(this).forPath(zkNode);

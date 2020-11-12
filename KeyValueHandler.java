@@ -158,7 +158,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
         byte[] data = curClient.getData().forPath(zkNode + "/" + serverId);
         String strData = new String(data);
         String[] server = strData.split(":");
-        log.info("Found server " + strData);
+//        log.info("Found server " + strData);
         return new InetSocketAddress(server[0], Integer.parseInt(server[1]));
     }
 }
