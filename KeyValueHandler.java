@@ -16,7 +16,7 @@ import org.apache.thrift.transport.TTransport;
 public class KeyValueHandler implements KeyValueService.Iface {
     // fields in starter code
     private Map<String, String> myMap;
-    private Lock mapLock = new ReentrantLock();
+    private Lock mapLock;
     private CuratorFramework curClient;
     private String zkNode;
     private String host;
@@ -29,7 +29,8 @@ public class KeyValueHandler implements KeyValueService.Iface {
     String currServerId;
     String backupServerId;
     InetSocketAddress backupAddress;    // use for when isPrimary is true;
-    KeyValueService.Client clientToBackUp;      // use for when isPrimary is true;
+//    KeyValueService.Client clientToBackUp;      // use for when isPrimary is true;
+    ConcurrentLinkedQueue<KeyValueService.Client> clientsQueue = null;
 
     public Map<String, String> getMyMap() {
         return myMap;
@@ -37,12 +38,12 @@ public class KeyValueHandler implements KeyValueService.Iface {
     public void setMyMap(Map<String, String> myMap) {
         this.myMap = myMap;
     }
-    public KeyValueService.Client getClientToBackUp() {
-        return clientToBackUp;
-    }
-    public void setClientToBackUp(KeyValueService.Client clientToBackUp) {
-        this.clientToBackUp = clientToBackUp;
-    }
+//    public KeyValueService.Client getClientToBackUp() {
+//        return clientToBackUp;
+//    }
+//    public void setClientToBackUp(KeyValueService.Client clientToBackUp) {
+//        this.clientToBackUp = clientToBackUp;
+//    }
     public InetSocketAddress getBackupAddress() {
         return backupAddress;
     }
@@ -80,6 +81,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
         this.curClient = curClient;
         this.zkNode = zkNode;
         myMap = new ConcurrentHashMap<>();
+        mapLock = new ReentrantLock();
 
         BasicConfigurator.configure();
         log = Logger.getLogger(StorageNode.class.getName());

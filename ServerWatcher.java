@@ -2,6 +2,11 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
+import org.apache.thrift.protocol.TBinaryProtocol;
+import org.apache.thrift.protocol.TProtocol;
+import org.apache.thrift.transport.TFramedTransport;
+import org.apache.thrift.transport.TSocket;
+import org.apache.thrift.transport.TTransport;
 import org.apache.zookeeper.WatchedEvent;
 
 import java.net.InetSocketAddress;
@@ -14,6 +19,8 @@ public class ServerWatcher implements CuratorWatcher {
     private CuratorFramework currClient;
     private String zkNode;
     private KeyValueHandler keyValueHandler;
+
+    private static final int SIZE_OF_CLIENTS_QUEUE = 32;
 
 //    boolean single = true;
 //    boolean isPrimary = true;
@@ -28,9 +35,10 @@ public class ServerWatcher implements CuratorWatcher {
     }
 
     @Override
-    public void process(WatchedEvent watchedEvent) throws Exception {
-        log.error("ZooKeeper event: " + watchedEvent);
+    synchronized public void process(WatchedEvent watchedEvent) throws Exception {
+        log.info("ZooKeeper event: " + watchedEvent);
 
+        currClient.sync(); // sync the zookeeper cluster to make sure the client will get the newest data.
         List<String> children = currClient.getChildren().usingWatcher(this).forPath(zkNode);
 
         // works
@@ -41,21 +49,44 @@ public class ServerWatcher implements CuratorWatcher {
         } else {
             keyValueHandler.setSingle(false);
             Collections.sort(children);
-            log.error(children.get(0) + "\n" + children.get(1));
+            log.info(children.get(0) + "\n" + children.get(1));
             if (keyValueHandler.currServerId.equals(children.get(0))) { // curr server is primary server
                 log.info("This is the primary server now!");
                 keyValueHandler.setPrimary(true);
                 keyValueHandler.setBackupServerId(children.get(1));
-                keyValueHandler.setBackupAddress(keyValueHandler.getAddress(keyValueHandler.getBackupServerId()));
-                keyValueHandler.setClientToBackUp(keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress()));
+                InetSocketAddress newBackupAddress = keyValueHandler.getAddress(children.get(1));
+                keyValueHandler.setBackupAddress(newBackupAddress);
 
-                // forward the whole map to the newly added server
-                InetSocketAddress newServerAddress = keyValueHandler.getAddress(children.get(1));
-                KeyValueService.Client client = keyValueHandler.getThriftClient(newServerAddress);
-                client.forwardMap(keyValueHandler.getMyMap());
+                if (keyValueHandler.clientsQueue == null || !keyValueHandler.backupAddress.equals(newBackupAddress)) {
+                    keyValueHandler.clientsQueue = null;
+
+                    KeyValueService.Client clientToBackUp = null;
+                    while(clientToBackUp == null) {
+                        try {
+                            clientToBackUp = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
+                        } catch (Exception e) {
+                        }
+                    }
+                    // forward the whole map to the newly added server
+                    clientToBackUp.forwardMap(keyValueHandler.getMyMap());
+                    // create clients in a queue for forwarding key-value pairs to the back
+                    for (int i = 0; i < SIZE_OF_CLIENTS_QUEUE; ++i) {
+                        KeyValueService.Client client = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
+                        keyValueHandler.clientsQueue.add(client);
+                    }
+                } else {
+                    // writeToBackup
+                    KeyValueService.Client client = null;
+                    while(client == null) {
+                        client = keyValueHandler.clientsQueue.poll();
+                    }
+                    // forward the whole map to the newly added server
+                    client.forwardMap(keyValueHandler.getMyMap());
+                }
             } else {
                 log.info("This is the backup server now!");
                 keyValueHandler.setPrimary(false);
+                keyValueHandler.clientsQueue = null;
                 keyValueHandler.setBackupServerId(keyValueHandler.currServerId);
 
                 // forward the whole map to the newly added server
