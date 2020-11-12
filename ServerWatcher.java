@@ -50,7 +50,7 @@ public class ServerWatcher implements CuratorWatcher {
             keyValueHandler.setSingle(false);
             Collections.sort(children);
             log.info(children.get(0) + "\n" + children.get(1));
-            if (keyValueHandler.currServerId.equals(children.get(0))) { // curr server is primary server
+            if (keyValueHandler.currServerId.equals(children.get(0))) { // curr server is the primary server
                 log.info("This is the primary server now!");
                 keyValueHandler.setPrimary(true);
                 keyValueHandler.setBackupServerId(children.get(1));
@@ -83,11 +83,12 @@ public class ServerWatcher implements CuratorWatcher {
                     // forward the whole map to the newly added server
                     client.forwardMap(keyValueHandler.getMyMap());
                 }
-            } else {
+            } else {     // curr server is the backup server
                 log.info("This is the backup server now!");
                 keyValueHandler.setPrimary(false);
-                keyValueHandler.clientsQueue = null;
                 keyValueHandler.setBackupServerId(keyValueHandler.currServerId);
+                keyValueHandler.setBackupAddress(null); // only for primary to use
+                keyValueHandler.clientsQueue = null;
 
                 // forward the whole map to the newly added server
                 InetSocketAddress newServerAddress = keyValueHandler.getAddress(children.get(0));
