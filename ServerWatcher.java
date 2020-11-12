@@ -60,13 +60,14 @@ public class ServerWatcher implements CuratorWatcher {
                 if (keyValueHandler.clientsQueue == null || !keyValueHandler.backupAddress.equals(newBackupAddress)) {
                     keyValueHandler.clientsQueue = null;
 
-                    KeyValueService.Client clientToBackUp = null;
-                    while(clientToBackUp == null) {
-                        try {
-                            clientToBackUp = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
-                        } catch (Exception e) {
-                        }
-                    }
+                    KeyValueService.Client clientToBackUp = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
+//                    KeyValueService.Client clientToBackUp = null;
+//                    while(clientToBackUp == null) {
+//                        try {
+//                            clientToBackUp = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
+//                        } catch (Exception e) {
+//                        }
+//                    }
                     // forward the whole map to the newly added server
                     clientToBackUp.forwardMap(keyValueHandler.getMyMap());
                     // create clients in a queue for forwarding key-value pairs to the back
@@ -75,14 +76,14 @@ public class ServerWatcher implements CuratorWatcher {
                         keyValueHandler.clientsQueue.add(client);
                     }
                 } else {
-                    // writeToBackup
-                    KeyValueService.Client client = null;
-                    while(client == null) {
-                        client = keyValueHandler.clientsQueue.poll();
+                    KeyValueService.Client clientToBackUp = null;
+                    while(clientToBackUp == null) {
+                        clientToBackUp = keyValueHandler.clientsQueue.poll();
                     }
                     // forward the whole map to the newly added server
-                    client.forwardMap(keyValueHandler.getMyMap());
+                    clientToBackUp.forwardMap(keyValueHandler.getMyMap());
                 }
+
             } else {     // curr server is the backup server
                 log.info("This is the backup server now!");
                 keyValueHandler.setPrimary(false);

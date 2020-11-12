@@ -104,10 +104,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
             if (!isSingle && isPrimary) {
                 KeyValueService.Client clientToBackUp = null;
                 while(clientToBackUp == null) {
-                    try {
-                        clientToBackUp = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
-                    } catch (Exception e) {
-                    }
+                    clientToBackUp = clientsQueue.poll();
                 }
                 clientToBackUp.put(key, value);
             }
