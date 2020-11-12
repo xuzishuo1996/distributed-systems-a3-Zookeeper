@@ -13,14 +13,14 @@ echo Port number 2: $KV_PORT_2
 
 kill -9 $(lsof -i:$KV_PORT -t) $(lsof -i:$KV_PORT_2 -t)
 
-end=$((SECONDS + 130))
+end=$((SECONDS + 30))
 
 $JAVA_HOME/bin/java -Xmx2g StorageNode $(hostname) $KV_PORT $ZKSTRING /$USER &
 P1=$!
 sleep 1s
 $JAVA_HOME/bin/java -Xmx2g StorageNode $(hostname) $KV_PORT_2 $ZKSTRING /$USER &
 P2=$!
-sleep 7s
+sleep 2s
 
 while [ $SECONDS -lt $end ]; do
     KILL_P1=$(shuf -i 0-1 -n 1)
