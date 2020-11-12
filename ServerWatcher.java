@@ -47,6 +47,9 @@ public class ServerWatcher implements CuratorWatcher {
             log.info("This is the single server now!");
             keyValueHandler.setSingle(true);
             keyValueHandler.setPrimary(true);
+            keyValueHandler.setBackupServerId(null);
+            keyValueHandler.setBackupAddress(null);
+            keyValueHandler.clientsQueue = null;
         } else {
             keyValueHandler.setSingle(false);
             Collections.sort(children);
