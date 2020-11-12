@@ -82,6 +82,7 @@ public class ServerWatcher implements CuratorWatcher {
                     }
                     // forward the whole map to the newly added server
                     clientToBackUp.forwardMap(keyValueHandler.getMyMap());
+                    keyValueHandler.clientsQueue.offer(clientToBackUp);
                 }
 
             } else {     // curr server is the backup server

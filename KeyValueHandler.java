@@ -107,6 +107,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
                     clientToBackUp = clientsQueue.poll();
                 }
                 clientToBackUp.put(key, value);
+                clientsQueue.offer(clientToBackUp);
             }
         } finally {
             mapLock.unlock();
@@ -130,7 +131,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
             TProtocol protocol = new TBinaryProtocol(transport);
             return new KeyValueService.Client(protocol);
         } catch (Exception e) {
-            log.error("Unable to connect to primary");
+            log.error("Unable to getThriftClient");
             return null;
         }
     }
