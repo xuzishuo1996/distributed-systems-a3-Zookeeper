@@ -4,6 +4,7 @@ import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.google.common.util.concurrent.Striped;
 import org.apache.curator.framework.*;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Logger;
@@ -16,7 +17,6 @@ import org.apache.thrift.transport.TTransport;
 public class KeyValueHandler implements KeyValueService.Iface {
     // fields in starter code
     private Map<String, String> myMap;
-    private Lock mapLock;
     private CuratorFramework curClient;
     private String zkNode;
     private String host;
@@ -30,7 +30,9 @@ public class KeyValueHandler implements KeyValueService.Iface {
     String backupServerId;
     InetSocketAddress backupAddress;    // use for when isPrimary is true;
 //    KeyValueService.Client clientToBackUp;      // use for when isPrimary is true;
-    ConcurrentLinkedQueue<KeyValueService.Client> clientsQueue = null;
+    ConcurrentLinkedQueue<KeyValueService.Client> clientsQueue;
+    private ReentrantLock mapLock;
+    private Striped<Lock> keyLock;
 
     public Map<String, String> getMyMap() {
         return myMap;
@@ -81,7 +83,9 @@ public class KeyValueHandler implements KeyValueService.Iface {
         this.curClient = curClient;
         this.zkNode = zkNode;
         myMap = new ConcurrentHashMap<>();
+        clientsQueue = null;
         mapLock = new ReentrantLock();
+        keyLock = Striped.lock(64);
 
         BasicConfigurator.configure();
         log = Logger.getLogger(StorageNode.class.getName());
@@ -96,7 +100,13 @@ public class KeyValueHandler implements KeyValueService.Iface {
     }
 
     public void put(String key, String value) throws org.apache.thrift.TException {
-        mapLock.lock();
+        // key-level lock
+        Lock lock = keyLock.get(key);
+        lock.lock();
+
+        // ensure that not put while forwarding the whole map to the new server
+        while (mapLock.isLocked());
+
         try {
             myMap.put(key, value);
 
@@ -113,7 +123,7 @@ public class KeyValueHandler implements KeyValueService.Iface {
             log.error(e.getCause());
 //            log.error(e.getStackTrace());
         } finally {
-            mapLock.unlock();
+            lock.unlock();
         }
     }
 
