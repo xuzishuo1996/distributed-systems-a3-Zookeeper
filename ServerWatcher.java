@@ -58,7 +58,8 @@ public class ServerWatcher implements CuratorWatcher {
                 InetSocketAddress newBackupAddress = keyValueHandler.getAddress(children.get(1));
                 keyValueHandler.setBackupAddress(newBackupAddress);
 
-                if (keyValueHandler.clientsQueue == null || !keyValueHandler.backupAddress.equals(newBackupAddress)) {
+//                if (keyValueHandler.clientsQueue == null || !keyValueHandler.backupAddress.equals(newBackupAddress)) {
+                if (keyValueHandler.clientsQueue == null) {
                     keyValueHandler.clientsQueue = new ConcurrentLinkedQueue<>();
 
                     KeyValueService.Client clientToBackUp = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
