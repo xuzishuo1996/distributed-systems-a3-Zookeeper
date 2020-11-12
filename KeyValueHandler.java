@@ -109,6 +109,8 @@ public class KeyValueHandler implements KeyValueService.Iface {
                 clientToBackUp.put(key, value);
                 clientsQueue.offer(clientToBackUp);
             }
+        } catch (Exception e) {
+            log.error(e);
         } finally {
             mapLock.unlock();
         }
