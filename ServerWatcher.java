@@ -76,15 +76,16 @@ public class ServerWatcher implements CuratorWatcher {
                         KeyValueService.Client client = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
                         keyValueHandler.clientsQueue.add(client);
                     }
-                } else {
-                    KeyValueService.Client clientToBackUp = null;
-                    while(clientToBackUp == null) {
-                        clientToBackUp = keyValueHandler.clientsQueue.poll();
-                    }
-                    // forward the whole map to the newly added server
-                    clientToBackUp.forwardMap(keyValueHandler.getMyMap());
-                    keyValueHandler.clientsQueue.offer(clientToBackUp);
                 }
+//                else {
+//                    KeyValueService.Client clientToBackUp = null;
+//                    while(clientToBackUp == null) {
+//                        clientToBackUp = keyValueHandler.clientsQueue.poll();
+//                    }
+//                    // forward the whole map to the newly added server
+//                    clientToBackUp.forwardMap(keyValueHandler.getMyMap());
+//                    keyValueHandler.clientsQueue.offer(clientToBackUp);
+//                }
 
             } else {     // curr server is the backup server
                 log.info("This is the backup server now!");
