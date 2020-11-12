@@ -37,35 +37,36 @@ public class ServerWatcher implements CuratorWatcher {
 
     @Override
     synchronized public void process(WatchedEvent watchedEvent) throws Exception {
-        log.info("ZooKeeper event: " + watchedEvent);
+        try {
+            log.info("ZooKeeper event: " + watchedEvent);
 
-        currClient.sync(); // sync the zookeeper cluster to make sure the client will get the newest data.
-        List<String> children = currClient.getChildren().usingWatcher(this).forPath(zkNode);
+            currClient.sync(); // sync the zookeeper cluster to make sure the client will get the newest data.
+            List<String> children = currClient.getChildren().usingWatcher(this).forPath(zkNode);
 
-        // works
-        if (children.size() == 1) {
-            log.info("This is the single server now!");
-            keyValueHandler.setSingle(true);
-            keyValueHandler.setPrimary(true);
-            keyValueHandler.setBackupServerId(null);
-            keyValueHandler.setBackupAddress(null);
-            keyValueHandler.clientsQueue = null;
-        } else {
-            keyValueHandler.setSingle(false);
-            Collections.sort(children);
-            log.info(children.get(0) + "\n" + children.get(1));
-            if (keyValueHandler.currServerId.equals(children.get(0))) { // curr server is the primary server
-                log.info("This is the primary server now!");
+            // works
+            if (children.size() == 1) {
+                log.info("This is the single server now!");
+                keyValueHandler.setSingle(true);
                 keyValueHandler.setPrimary(true);
-                keyValueHandler.setBackupServerId(children.get(1));
-                InetSocketAddress newBackupAddress = keyValueHandler.getAddress(children.get(1));
-                keyValueHandler.setBackupAddress(newBackupAddress);
+                keyValueHandler.setBackupServerId(null);
+                keyValueHandler.setBackupAddress(null);
+                keyValueHandler.clientsQueue = null;
+            } else {
+                keyValueHandler.setSingle(false);
+                Collections.sort(children);
+                log.info(children.get(0) + "\n" + children.get(1));
+                if (keyValueHandler.currServerId.equals(children.get(0))) { // curr server is the primary server
+                    log.info("This is the primary server now!");
+                    keyValueHandler.setPrimary(true);
+                    keyValueHandler.setBackupServerId(children.get(1));
+                    InetSocketAddress newBackupAddress = keyValueHandler.getAddress(children.get(1));
+                    keyValueHandler.setBackupAddress(newBackupAddress);
 
 //                if (keyValueHandler.clientsQueue == null || !keyValueHandler.backupAddress.equals(newBackupAddress)) {
-                if (keyValueHandler.clientsQueue == null) {
-                    keyValueHandler.clientsQueue = new ConcurrentLinkedQueue<>();
+                    if (keyValueHandler.clientsQueue == null) {
+                        keyValueHandler.clientsQueue = new ConcurrentLinkedQueue<>();
 
-                    KeyValueService.Client clientToBackUp = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
+                        KeyValueService.Client clientToBackUp = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
 //                    KeyValueService.Client clientToBackUp = null;
 //                    while(clientToBackUp == null) {
 //                        try {
@@ -73,14 +74,14 @@ public class ServerWatcher implements CuratorWatcher {
 //                        } catch (Exception e) {
 //                        }
 //                    }
-                    // forward the whole map to the newly added server
-                    clientToBackUp.forwardMap(keyValueHandler.getMyMap());
-                    // create clients in a queue for forwarding key-value pairs to the back
-                    for (int i = 0; i < SIZE_OF_CLIENTS_QUEUE; ++i) {
-                        KeyValueService.Client client = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
-                        keyValueHandler.clientsQueue.add(client);
+                        // forward the whole map to the newly added server
+                        clientToBackUp.forwardMap(keyValueHandler.getMyMap());
+                        // create clients in a queue for forwarding key-value pairs to the back
+                        for (int i = 0; i < SIZE_OF_CLIENTS_QUEUE; ++i) {
+                            KeyValueService.Client client = keyValueHandler.getThriftClient(keyValueHandler.getBackupAddress());
+                            keyValueHandler.clientsQueue.add(client);
+                        }
                     }
-                }
 //                else {
 //                    KeyValueService.Client clientToBackUp = null;
 //                    while(clientToBackUp == null) {
@@ -91,18 +92,22 @@ public class ServerWatcher implements CuratorWatcher {
 //                    keyValueHandler.clientsQueue.offer(clientToBackUp);
 //                }
 
-            } else {     // curr server is the backup server
-                log.info("This is the backup server now!");
-                keyValueHandler.setPrimary(false);
-                keyValueHandler.setBackupServerId(keyValueHandler.currServerId);
-                keyValueHandler.setBackupAddress(null); // only for primary to use
-                keyValueHandler.clientsQueue = null;
+                } else {     // curr server is the backup server
+                    log.info("This is the backup server now!");
+                    keyValueHandler.setPrimary(false);
+                    keyValueHandler.setBackupServerId(keyValueHandler.currServerId);
+                    keyValueHandler.setBackupAddress(null); // only for primary to use
+                    keyValueHandler.clientsQueue = null;
 
-                // forward the whole map to the newly added server
-                InetSocketAddress newServerAddress = keyValueHandler.getAddress(children.get(0));
-                KeyValueService.Client client = keyValueHandler.getThriftClient(newServerAddress);
-                client.forwardMap(keyValueHandler.getMyMap());
+                    // forward the whole map to the newly added server
+                    InetSocketAddress newServerAddress = keyValueHandler.getAddress(children.get(0));
+                    KeyValueService.Client client = keyValueHandler.getThriftClient(newServerAddress);
+                    client.forwardMap(keyValueHandler.getMyMap());
+                }
             }
+        } catch (Exception e) {
+            log.error(e.getStackTrace());
+            keyValueHandler.clientsQueue = null;
         }
     }
 }

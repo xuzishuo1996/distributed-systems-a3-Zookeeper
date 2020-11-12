@@ -92,11 +92,16 @@ public class KeyValueHandler implements KeyValueService.Iface {
     }
 
     public String get(String key) throws org.apache.thrift.TException {
-        String ret = myMap.get(key);
-        if (ret == null)
+        try {
+            String ret = myMap.get(key);
+            if (ret == null)
+                return "";
+            else
+                return ret;
+        } catch (Exception e) {
+            log.error(e.getStackTrace());
             return "";
-        else
-            return ret;
+        }
     }
 
     public void put(String key, String value) throws org.apache.thrift.TException {
@@ -120,8 +125,8 @@ public class KeyValueHandler implements KeyValueService.Iface {
                 clientsQueue.offer(clientToBackUp);
             }
         } catch (Exception e) {
-            log.error(e.getCause());
-//            log.error(e.getStackTrace());
+            log.error(e.getStackTrace());
+            this.clientsQueue = null;
         } finally {
             lock.unlock();
         }
